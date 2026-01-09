@@ -1,30 +1,142 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
 from src.data_loader import load_transactions
 from src.customer_analysis import top_product_per_customer
 from src.clustering import customer_clustering
 from src.market_basket import market_basket_analysis
 from src.area_analysis import area_wise_demand
 
-st.set_page_config(page_title="Retail Intelligence Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Retail Intelligence & Strategy Dashboard",
+    layout="wide"
+)
 
-st.title("🛒 Customer Purchase Behavior Analysis")
+# ===================== SIDEBAR =====================
+st.sidebar.title("📊 Strategy Controls")
 
-# Load data (sample file for Streamlit)
+initiative = st.sidebar.selectbox(
+    "Strategic Initiative",
+    ["New Product Launch", "Cost Optimization", "Market Expansion"]
+)
+
+growth_rate = st.sidebar.slider("Revenue Growth (%)", 5, 30, 12)
+marketing_ratio = st.sidebar.slider("Marketing Expense (%)", 5, 30, 15)
+personnel_ratio = st.sidebar.slider("Personnel Cost (%)", 5, 40, 25)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🔍 ML Modules")
+show_customer = st.sidebar.checkbox("Top Product per Customer", True)
+show_area = st.sidebar.checkbox("Area-wise Demand", True)
+show_cluster = st.sidebar.checkbox("Customer Segmentation", True)
+show_basket = st.sidebar.checkbox("Market Basket Analysis", True)
+
+# ===================== LOAD DATA =====================
 df = load_transactions("data/sample_transactions.csv")
 
-# ---------------- TOP PRODUCT ----------------
-st.subheader("🧾 Top Product per Customer")
-st.dataframe(top_product_per_customer(df))
+# ===================== EXECUTIVE STRATEGY MODEL =====================
+years = [2019, 2020, 2021, 2022, 2023]
+base_revenue = [80, 92, 103, 115, 127]
+revenue = [r * (1 + growth_rate / 100) for r in base_revenue]
 
-# ---------------- AREA DEMAND ----------------
-st.subheader("📍 Area-wise Product Demand")
-st.dataframe(area_wise_demand(df).head(10))
+finance_df = pd.DataFrame({
+    "Year": years,
+    "Revenue": revenue
+})
 
-# ---------------- CUSTOMER CLUSTERING ----------------
-st.subheader("👥 Customer Segmentation")
-st.dataframe(customer_clustering(df))
+finance_df["COGS"] = finance_df["Revenue"] * 0.10
+finance_df["Marketing"] = finance_df["Revenue"] * marketing_ratio / 100
+finance_df["Personnel"] = finance_df["Revenue"] * personnel_ratio / 100
+finance_df["EBITDA"] = finance_df["Revenue"] - (
+    finance_df["COGS"] + finance_df["Marketing"] + finance_df["Personnel"]
+)
+finance_df["Tax"] = finance_df["EBITDA"] * 0.15
+finance_df["Net Profit"] = finance_df["EBITDA"] - finance_df["Tax"]
 
-# ---------------- MARKET BASKET ----------------
-st.subheader("🧺 Market Basket Analysis")
-rules = market_basket_analysis(df)
-st.dataframe(rules.head(10))
+# ===================== HEADER =====================
+st.title("📈 Retail Intelligence & Executive Strategy Dashboard")
+st.subheader(f"Strategic Initiative: **{initiative}**")
+
+# ===================== KPI ROW =====================
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Total Revenue", f"{finance_df['Revenue'].sum():.1f} MCHF")
+k2.metric("Gross Margin", f"{(finance_df['Revenue'].sum() - finance_df['COGS'].sum()):.1f} MCHF")
+k3.metric("EBITDA", f"{finance_df['EBITDA'].sum():.1f} MCHF")
+k4.metric("Net Profit", f"{finance_df['Net Profit'].sum():.1f} MCHF")
+
+# ===================== FINANCIAL TABLE =====================
+st.subheader("📋 Initiative Valuation (5 Years)")
+st.dataframe(finance_df.style.format("{:.1f}"))
+
+# ===================== COST ANALYSIS =====================
+st.subheader("💰 Cost Analysis")
+
+cost_df = pd.DataFrame({
+    "Cost Type": ["COGS", "Marketing", "Personnel"],
+    "Amount": [
+        finance_df["COGS"].sum(),
+        finance_df["Marketing"].sum(),
+        finance_df["Personnel"].sum()
+    ]
+})
+
+pie = px.pie(
+    cost_df,
+    names="Cost Type",
+    values="Amount",
+    hole=0.45
+)
+st.plotly_chart(pie, use_container_width=True)
+
+# ===================== YEARLY PROFIT =====================
+st.subheader("📊 Yearly Profit Overview")
+
+fig = go.Figure()
+fig.add_bar(x=finance_df["Year"], y=finance_df["EBITDA"], name="EBITDA")
+fig.add_bar(x=finance_df["Year"], y=finance_df["Tax"], name="Tax")
+fig.add_scatter(
+    x=finance_df["Year"],
+    y=finance_df["Net Profit"],
+    name="Net Profit",
+    mode="lines+markers"
+)
+
+fig.update_layout(barmode="group")
+st.plotly_chart(fig, use_container_width=True)
+
+# ===================== ML SECTION =====================
+st.markdown("---")
+st.header("🤖 Machine Learning Insights")
+
+# -------- Top Product per Customer --------
+if show_customer:
+    st.subheader("🧾 Top Product per Customer")
+    st.dataframe(top_product_per_customer(df))
+
+# -------- Area-wise Demand --------
+if show_area:
+    st.subheader("📍 Area-wise Product Demand")
+    area_df = area_wise_demand(df)
+    st.dataframe(area_df.head(10))
+
+    area_chart = px.bar(
+        area_df.head(10),
+        x="Area",
+        y="Quantity",
+        color="Category",
+        title="Top Product Categories by Area"
+    )
+    st.plotly_chart(area_chart, use_container_width=True)
+
+# -------- Customer Clustering --------
+if show_cluster:
+    st.subheader("👥 Customer Segmentation")
+    st.dataframe(customer_clustering(df))
+
+# -------- Market Basket --------
+if show_basket:
+    st.subheader("🧺 Market Basket Analysis")
+    rules = market_basket_analysis(df)
+    st.dataframe(rules.head(10))
