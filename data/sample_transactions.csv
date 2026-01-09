@@ -1,0 +1,5 @@
+Invoice ID,City,Customer type,Product line,Unit price,Quantity,Date
+1,Yangon,Member,Food and beverages,50,2,2019-01-01
+2,Mandalay,Normal,Electronic accessories,120,1,2019-01-02
+3,Naypyitaw,Member,Health and beauty,80,3,2019-01-03
+4,Yangon,Normal,Home and lifestyle,60,2,2019-01-04
