@@ -2,21 +2,34 @@ import pandas as pd
 import os
 
 # ---------- TRANSACTION DATA (CUSTOMER BEHAVIOR) ----------
-def load_transactions(path):
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Transactions file not found: {path}")
+import pandas as pd
+import os
 
-    df = pd.read_csv(path)
+def load_transactions(source):
+    """
+    source can be:
+    - file path (str)
+    - Streamlit UploadedFile
+    """
+
+    # Case 1: Uploaded via Streamlit
+    if hasattr(source, "read"):
+        df = pd.read_csv(source)
+
+    # Case 2: File path
+    else:
+        if not os.path.exists(source):
+            raise FileNotFoundError(f"Transactions file not found: {source}")
+        df = pd.read_csv(source)
+
     df.columns = df.columns.str.strip()
 
-    # Kaggle Supermarket Sales column mapping
+    # Column mapping for Supermarket Sales dataset
     mapping = {
-        "InvoiceDate": "Date",
-        "Date": "Date",
         "City": "Area",
+        "Customer type": "Customer_ID",
         "Product line": "Category",
-        "Unit price": "Price",
-        "Customer type": "Customer_ID"
+        "Unit price": "Price"
     }
     df.rename(columns=mapping, inplace=True)
 
