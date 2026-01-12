@@ -51,3 +51,6 @@ customer-purchase-behavior-analysis/
 pip install -r requirements.txt
 python main.py --transactions data/sample_transactions.csv
 streamlit run app.py
+
+## 🚀 Live Demo
+👉 https://customer-purchase-behavior-analysis-eadyk39wuor4dh4ghbp6cw.streamlit.app/
